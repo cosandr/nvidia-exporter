@@ -30,7 +30,7 @@ type Exporter struct {
 func main() {
 	var (
 		level         = flag.String("log.level", "info", "Set the output log level")
-		listenAddress = flag.String("web.listen-address", "0.0.0.0:9401", "Address to listen on for web interface and telemetry.")
+		listenAddress = flag.String("web.listen-address", "0.0.0.0:9402", "Address to listen on for web interface and telemetry.")
 		metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	)
 	flag.Parse()

@@ -4,7 +4,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/mindprince/gonvml"
+	"github.com/cosandr/gonvml"
 	log "github.com/sirupsen/logrus"
 )
 
