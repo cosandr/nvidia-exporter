@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"time"
 
@@ -13,6 +14,33 @@ var averageDuration = 10 * time.Second
 type Metrics struct {
 	Version string
 	Devices []*Device
+}
+
+// Process contains the stats of a process running on the GPU
+type Process struct {
+	PID     uint
+	Name    *string
+	SMUtil  uint
+	MemUtil uint
+	EncUtil uint
+	DecUtil uint
+}
+
+// ToString returns a string representation of this process
+func (p Process) ToString() string {
+	var dbgStr = fmt.Sprintf("Process: %d, SM  util: %d, Mem util: %d, Enc util: %d, Dec util: %d",
+		p.PID, p.SMUtil, p.MemUtil, p.EncUtil, p.DecUtil)
+	if p.Name != nil {
+		dbgStr += fmt.Sprintf(", Name: %s", *p.Name)
+	} else {
+		dbgStr += fmt.Sprintf(", Name: N/A")
+	}
+	return dbgStr
+}
+
+// PromPID returns the PID as a string for Prometheus
+func (p Process) PromPID() string {
+	return strconv.Itoa(int(p.PID))
 }
 
 type Device struct {
@@ -31,6 +59,7 @@ type Device struct {
 	UtilizationGPUAverage   float64
 	ClockCurrentGraphics    float64
 	ClockAppDefaultGraphics float64
+	UtilizationProcesses    []*Process
 }
 
 func collectMetrics() (*Metrics, error) {
@@ -113,24 +142,57 @@ func collectMetrics() (*Metrics, error) {
 		// This appears to be the memory clock
 		clockAppDefaultGraphics, clockAppDefaultGraphicsErr := device.Clock(gonvml.ClockIDAppClockDefault, gonvml.ClockTypeGraphics)
 
-		metrics.Devices = append(metrics.Devices,
-			&Device{
-				Index:                   strconv.Itoa(index),
-				MinorNumber:             strconv.Itoa(int(minorNumber)),
-				Name:                    name,
-				UUID:                    uuid,
-				Temperature:             checkError(temperatureErr, float64(temperature), index, "Temperature"),
-				PowerUsage:              checkError(powerUsageErr, float64(powerUsage), index, "PowerUsage"),
-				PowerUsageAverage:       checkError(powerUsageAverageErr, float64(powerUsageAverage), index, "PowerUsageAverage"),
-				FanSpeed:                checkError(fanSpeedErr, float64(fanSpeed), index, "FanSpeed"),
-				MemoryTotal:             checkError(memoryInfoErr, float64(memoryTotal), index, "MemoryTotal"),
-				MemoryUsed:              checkError(memoryInfoErr, float64(memoryUsed), index, "MemoryUsed"),
-				UtilizationMemory:       checkError(utilizationRatesErr, float64(utilizationMemory), index, "UtilizationMemory"),
-				UtilizationGPU:          checkError(utilizationRatesErr, float64(utilizationGPU), index, "UtilizationGPU"),
-				UtilizationGPUAverage:   checkError(utilizationGPUAverageErr, float64(utilizationGPUAverage), index, "UtilizationGPUAverage"),
-				ClockCurrentGraphics:    checkError(clockCurrentGraphicsErr, float64(clockCurrentGraphics), index, "ClockCurrentGraphics"),
-				ClockAppDefaultGraphics: checkError(clockAppDefaultGraphicsErr, float64(clockAppDefaultGraphics), index, "ClockAppDefaultGraphics"),
-			})
+		var appendDevice = Device{
+			Index:                   strconv.Itoa(index),
+			MinorNumber:             strconv.Itoa(int(minorNumber)),
+			Name:                    name,
+			UUID:                    uuid,
+			Temperature:             checkError(temperatureErr, float64(temperature), index, "Temperature"),
+			PowerUsage:              checkError(powerUsageErr, float64(powerUsage), index, "PowerUsage"),
+			PowerUsageAverage:       checkError(powerUsageAverageErr, float64(powerUsageAverage), index, "PowerUsageAverage"),
+			FanSpeed:                checkError(fanSpeedErr, float64(fanSpeed), index, "FanSpeed"),
+			MemoryTotal:             checkError(memoryInfoErr, float64(memoryTotal), index, "MemoryTotal"),
+			MemoryUsed:              checkError(memoryInfoErr, float64(memoryUsed), index, "MemoryUsed"),
+			UtilizationMemory:       checkError(utilizationRatesErr, float64(utilizationMemory), index, "UtilizationMemory"),
+			UtilizationGPU:          checkError(utilizationRatesErr, float64(utilizationGPU), index, "UtilizationGPU"),
+			UtilizationGPUAverage:   checkError(utilizationGPUAverageErr, float64(utilizationGPUAverage), index, "UtilizationGPUAverage"),
+			ClockCurrentGraphics:    checkError(clockCurrentGraphicsErr, float64(clockCurrentGraphics), index, "ClockCurrentGraphics"),
+			ClockAppDefaultGraphics: checkError(clockAppDefaultGraphicsErr, float64(clockAppDefaultGraphics), index, "ClockAppDefaultGraphics"),
+		}
+		// Skip process stats if not requested
+		if !usePerProcess {
+			metrics.Devices = append(metrics.Devices, &appendDevice)
+			continue
+		}
+		// Collect per-process stats
+		utilizations, utilizationsErr := device.ProcessUtilization(10, averageDuration)
+		if utilizationsErr != nil {
+			// appendDevice.UtilizationProcesses = nil
+			log.Errorf("\tdev.UtilizationProcesses() error: %v\n", err)
+		} else {
+			log.Debugf("Process count: %v\n", len(utilizations))
+			var pList []*Process
+			for _, sample := range utilizations {
+				var p = Process{
+					PID:     sample.Pid,
+					SMUtil:  sample.SMUtil,
+					MemUtil: sample.MemUtil,
+					EncUtil: sample.EncUtil,
+					DecUtil: sample.DecUtil,
+				}
+
+				name, err := gonvml.SystemGetProcessName(sample.Pid, 64)
+				if err != nil {
+					log.Errorf("\tdev.SystemGetProcessName() error: %v\n", err)
+				} else {
+					p.Name = &name
+				}
+				pList = append(pList, &p)
+				log.Debug(p.ToString())
+			}
+			appendDevice.UtilizationProcesses = pList
+		}
+		metrics.Devices = append(metrics.Devices, &appendDevice)
 	}
 	return metrics, nil
 }

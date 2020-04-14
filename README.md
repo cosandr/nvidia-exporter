@@ -3,7 +3,13 @@
 This exporter used the NVidia Management Library (NVML) to query information
 about the installed Nvidia GPUs.
 
-This fork also exports current graphics (`nvidia_clock_current_graphics`) and memory clock (`nvidia_clock_appdefault_graphics`).
+Originally made by [BugRoger](https://github.com/BugRoger/nvidia-exporter).
+
+Go module and some tweaks by [ashleyprimo](https://github.com/ashleyprimo/nvidia-exporter).
+
+Additions with this fork:
+* Export current graphics (`nvidia_clock_current_graphics`) and memory clock (`nvidia_clock_appdefault_graphics`)
+* Export per-process utilization stats (pid, name, sm, mem, encoder, decoder), enable with `nvidia.per-process` option
 
 ## Requirements
 
@@ -156,4 +162,29 @@ nvidia_clock_appdefault_graphics{minor="0"} 6118
 # HELP nvidia_clock_current_graphics Current GPU graphics clock speed as reported by the device
 # TYPE nvidia_clock_current_graphics gauge
 nvidia_clock_current_graphics{minor="0"} 1582
+# HELP nvidia_utilization_process_decutil Process decoder utilization stats averaged over 10s
+# TYPE nvidia_utilization_process_decutil gauge
+nvidia_utilization_process_decutil{minor="0",pid="121742"} 0
+nvidia_utilization_process_decutil{minor="0",pid="1218"} 0
+nvidia_utilization_process_decutil{minor="0",pid="1632"} 0
+# HELP nvidia_utilization_process_encutil Process encoder utilization stats averaged over 10s
+# TYPE nvidia_utilization_process_encutil gauge
+nvidia_utilization_process_encutil{minor="0",pid="121742"} 0
+nvidia_utilization_process_encutil{minor="0",pid="1218"} 0
+nvidia_utilization_process_encutil{minor="0",pid="1632"} 0
+# HELP nvidia_utilization_process_memutil Process memory utilization stats averaged over 10s
+# TYPE nvidia_utilization_process_memutil gauge
+nvidia_utilization_process_memutil{minor="0",pid="121742"} 0
+nvidia_utilization_process_memutil{minor="0",pid="1218"} 0
+nvidia_utilization_process_memutil{minor="0",pid="1632"} 0
+# HELP nvidia_utilization_process_name Process name, if value is 0 the name couldn't be determined
+# TYPE nvidia_utilization_process_name gauge
+nvidia_utilization_process_name{minor="0",name="/usr/bin/kitty",pid="121742"} 1
+nvidia_utilization_process_name{minor="0",name="/usr/bin/kwin_x11",pid="1632"} 1
+nvidia_utilization_process_name{minor="0",name="/usr/lib/Xorg",pid="1218"} 1
+# HELP nvidia_utilization_process_smutil Process SM utilization stats averaged over 10s
+# TYPE nvidia_utilization_process_smutil gauge
+nvidia_utilization_process_smutil{minor="0",pid="121742"} 0
+nvidia_utilization_process_smutil{minor="0",pid="1218"} 0
+nvidia_utilization_process_smutil{minor="0",pid="1632"} 1
 ```

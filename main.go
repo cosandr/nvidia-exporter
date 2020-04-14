@@ -11,22 +11,29 @@ import (
 
 const namespace = "nvidia"
 
+var usePerProcess = false
+
 type Exporter struct {
-	up                      prometheus.Gauge
-	info                    *prometheus.GaugeVec
-	deviceCount             prometheus.Gauge
-	temperatures            *prometheus.GaugeVec
-	deviceInfo              *prometheus.GaugeVec
-	powerUsage              *prometheus.GaugeVec
-	powerUsageAverage       *prometheus.GaugeVec
-	fanSpeed                *prometheus.GaugeVec
-	memoryTotal             *prometheus.GaugeVec
-	memoryUsed              *prometheus.GaugeVec
-	utilizationMemory       *prometheus.GaugeVec
-	utilizationGPU          *prometheus.GaugeVec
-	utilizationGPUAverage   *prometheus.GaugeVec
-	clockCurrentGraphics    *prometheus.GaugeVec
-	clockAppDefaultGraphics *prometheus.GaugeVec
+	up                        prometheus.Gauge
+	info                      *prometheus.GaugeVec
+	deviceCount               prometheus.Gauge
+	temperatures              *prometheus.GaugeVec
+	deviceInfo                *prometheus.GaugeVec
+	powerUsage                *prometheus.GaugeVec
+	powerUsageAverage         *prometheus.GaugeVec
+	fanSpeed                  *prometheus.GaugeVec
+	memoryTotal               *prometheus.GaugeVec
+	memoryUsed                *prometheus.GaugeVec
+	utilizationMemory         *prometheus.GaugeVec
+	utilizationGPU            *prometheus.GaugeVec
+	utilizationGPUAverage     *prometheus.GaugeVec
+	clockCurrentGraphics      *prometheus.GaugeVec
+	clockAppDefaultGraphics   *prometheus.GaugeVec
+	utilizationProcessName    *prometheus.GaugeVec
+	utilizationProcessSMUtil  *prometheus.GaugeVec
+	utilizationProcessMemUtil *prometheus.GaugeVec
+	utilizationProcessEncUtil *prometheus.GaugeVec
+	utilizationProcessDecUtil *prometheus.GaugeVec
 }
 
 func main() {
@@ -35,6 +42,7 @@ func main() {
 		listenAddress = flag.String("web.listen-address", "0.0.0.0:9402", "Address to listen on for web interface and telemetry.")
 		metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	)
+	flag.BoolVar(&usePerProcess, "nvidia.per-process", false, "Export per-process utilization")
 	flag.Parse()
 	setLogLevel(*level)
 
@@ -48,11 +56,12 @@ func main() {
              <h1>NVML Exporter</h1>
              <p><a href='` + *metricsPath + `'>Metrics</a></p>
 	     <h2>More information:</h2>
-	     <p><a href="https://github.com/BugRoger/nvidia-exporter">github.com/BugRoger/nvidia-exporter</a></p>
+	     <p><a href="https://github.com/cosandr/nvidia-exporter">github.com/cosandr/nvidia-exporter</a></p>
              </body>
              </html>`))
 	})
 	log.Infof("Starting HTTP server on %s", *listenAddress)
+	log.Infof("Export per-process utilization? %t", usePerProcess)
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))
 }
 
@@ -171,7 +180,7 @@ func NewExporter() *Exporter {
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "utilization_gpu_average",
-				Help:      "Used memory as reported by the device averraged over 10s",
+				Help:      "Used memory as reported by the device averaged over 10s",
 			},
 			[]string{"minor"},
 		),
@@ -190,6 +199,46 @@ func NewExporter() *Exporter {
 				Help:      "Default application clock target in the graphics domain as reported by the device",
 			},
 			[]string{"minor"},
+		),
+		utilizationProcessName: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "utilization_process_name",
+				Help:      "Process name, if value is 0 the name couldn't be determined",
+			},
+			[]string{"minor", "pid", "name"},
+		),
+		utilizationProcessSMUtil: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "utilization_process_smutil",
+				Help:      "Process SM utilization stats averaged over 10s",
+			},
+			[]string{"minor", "pid"},
+		),
+		utilizationProcessMemUtil: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "utilization_process_memutil",
+				Help:      "Process memory utilization stats averaged over 10s",
+			},
+			[]string{"minor", "pid"},
+		),
+		utilizationProcessEncUtil: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "utilization_process_encutil",
+				Help:      "Process encoder utilization stats averaged over 10s",
+			},
+			[]string{"minor", "pid"},
+		),
+		utilizationProcessDecUtil: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "utilization_process_decutil",
+				Help:      "Process decoder utilization stats averaged over 10s",
+			},
+			[]string{"minor", "pid"},
 		),
 	}
 }
@@ -254,6 +303,19 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		if checkMetric(d.ClockAppDefaultGraphics) {
 			e.clockAppDefaultGraphics.WithLabelValues(d.MinorNumber).Set(d.ClockAppDefaultGraphics)
 		}
+		if len(d.UtilizationProcesses) > 0 {
+			for _, p := range d.UtilizationProcesses {
+				if p.Name != nil {
+					e.utilizationProcessName.WithLabelValues(d.MinorNumber, p.PromPID(), *p.Name).Set(1)
+				} else {
+					e.utilizationProcessName.WithLabelValues(d.MinorNumber, p.PromPID(), "N/A").Set(0)
+				}
+				e.utilizationProcessSMUtil.WithLabelValues(d.MinorNumber, p.PromPID()).Set(float64(p.SMUtil))
+				e.utilizationProcessMemUtil.WithLabelValues(d.MinorNumber, p.PromPID()).Set(float64(p.MemUtil))
+				e.utilizationProcessEncUtil.WithLabelValues(d.MinorNumber, p.PromPID()).Set(float64(p.EncUtil))
+				e.utilizationProcessDecUtil.WithLabelValues(d.MinorNumber, p.PromPID()).Set(float64(p.DecUtil))
+			}
+		}
 	}
 
 	e.deviceCount.Collect(metrics)
@@ -271,6 +333,13 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	e.utilizationMemory.Collect(metrics)
 	e.clockCurrentGraphics.Collect(metrics)
 	e.clockAppDefaultGraphics.Collect(metrics)
+	if usePerProcess {
+		e.utilizationProcessName.Collect(metrics)
+		e.utilizationProcessSMUtil.Collect(metrics)
+		e.utilizationProcessMemUtil.Collect(metrics)
+		e.utilizationProcessEncUtil.Collect(metrics)
+		e.utilizationProcessDecUtil.Collect(metrics)
+	}
 }
 
 func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
@@ -289,4 +358,11 @@ func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
 	e.utilizationMemory.Describe(descs)
 	e.clockCurrentGraphics.Describe(descs)
 	e.clockAppDefaultGraphics.Describe(descs)
+	if usePerProcess {
+		e.utilizationProcessName.Describe(descs)
+		e.utilizationProcessSMUtil.Describe(descs)
+		e.utilizationProcessMemUtil.Describe(descs)
+		e.utilizationProcessEncUtil.Describe(descs)
+		e.utilizationProcessDecUtil.Describe(descs)
+	}
 }
