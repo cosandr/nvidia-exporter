@@ -35,6 +35,8 @@ type Exporter struct {
 	utilizationProcessMemUtil *prometheus.GaugeVec
 	utilizationProcessEncUtil *prometheus.GaugeVec
 	utilizationProcessDecUtil *prometheus.GaugeVec
+	pcieTxBytes               *prometheus.GaugeVec
+	pcieRxBytes               *prometheus.GaugeVec
 }
 
 func main() {
@@ -241,6 +243,22 @@ func NewExporter() *Exporter {
 			},
 			[]string{"minor", "pid"},
 		),
+		pcieTxBytes: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "pcie_tx_bytes",
+				Help:      "PCIe TX throughput as reported by the device",
+			},
+			[]string{"minor"},
+		),
+		pcieRxBytes: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "pcie_rx_bytes",
+				Help:      "PCIe RX throughput as reported by the device",
+			},
+			[]string{"minor"},
+		),
 	}
 }
 
@@ -333,6 +351,12 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 				prevProcesses = append(prevProcesses, p)
 			}
 		}
+		if checkMetric(d.PcieTxBytes) {
+			e.pcieTxBytes.WithLabelValues(d.MinorNumber).Set(d.PcieTxBytes)
+		}
+		if checkMetric(d.PcieRxBytes) {
+			e.pcieRxBytes.WithLabelValues(d.MinorNumber).Set(d.PcieRxBytes)
+		}
 	}
 
 	e.deviceCount.Collect(metrics)
@@ -357,6 +381,8 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		e.utilizationProcessEncUtil.Collect(metrics)
 		e.utilizationProcessDecUtil.Collect(metrics)
 	}
+	e.pcieTxBytes.Collect(metrics)
+	e.pcieRxBytes.Collect(metrics)
 }
 
 func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
@@ -382,4 +408,6 @@ func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
 		e.utilizationProcessEncUtil.Describe(descs)
 		e.utilizationProcessDecUtil.Describe(descs)
 	}
+	e.pcieTxBytes.Describe(descs)
+	e.pcieRxBytes.Describe(descs)
 }

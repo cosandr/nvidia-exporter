@@ -60,6 +60,8 @@ type Device struct {
 	ClockCurrentGraphics    float64
 	ClockAppDefaultGraphics float64
 	UtilizationProcesses    []*Process
+	PcieTxBytes             float64
+	PcieRxBytes             float64
 }
 
 func collectMetrics() (*Metrics, error) {
@@ -142,6 +144,10 @@ func collectMetrics() (*Metrics, error) {
 		// This appears to be the memory clock
 		clockAppDefaultGraphics, clockAppDefaultGraphicsErr := device.Clock(gonvml.ClockIDAppClockDefault, gonvml.ClockTypeGraphics)
 
+		pcieTxBytes, pcieTxBytesErr := device.PcieThroughput(gonvml.PcieUtilTxBytes)
+
+		pcieRxBytes, pcieRxBytesErr := device.PcieThroughput(gonvml.PcieUtilRxBytes)
+
 		var appendDevice = Device{
 			Index:                   strconv.Itoa(index),
 			MinorNumber:             strconv.Itoa(int(minorNumber)),
@@ -158,6 +164,8 @@ func collectMetrics() (*Metrics, error) {
 			UtilizationGPUAverage:   checkError(utilizationGPUAverageErr, float64(utilizationGPUAverage), index, "UtilizationGPUAverage"),
 			ClockCurrentGraphics:    checkError(clockCurrentGraphicsErr, float64(clockCurrentGraphics), index, "ClockCurrentGraphics"),
 			ClockAppDefaultGraphics: checkError(clockAppDefaultGraphicsErr, float64(clockAppDefaultGraphics), index, "ClockAppDefaultGraphics"),
+			PcieTxBytes:             checkError(pcieTxBytesErr, float64(pcieTxBytes), index, "PcieTxBytes"),
+			PcieRxBytes:             checkError(pcieRxBytesErr, float64(pcieRxBytes), index, "PcieRxBytes"),
 		}
 		// Skip process stats if not requested
 		if !usePerProcess {

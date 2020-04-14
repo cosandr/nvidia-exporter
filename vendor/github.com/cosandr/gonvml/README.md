@@ -26,3 +26,5 @@ This fork adds the ability to query clock speeds as well, on my 1080 Ti I can ac
 * Boost max graphics clock (base clock?)
 
 All other values result in either invalid argument or not supported error, quite probable they only work on Quadro or similar.
+
+I've also added PcieThroughput queries.

@@ -10,6 +10,7 @@ Go module and some tweaks by [ashleyprimo](https://github.com/ashleyprimo/nvidia
 Additions with this fork:
 * Export current graphics (`nvidia_clock_current_graphics`) and memory clock (`nvidia_clock_appdefault_graphics`)
 * Export per-process utilization stats (pid, name, sm, mem, encoder, decoder), enable with `nvidia.per-process` option
+* Export PCIe throughput `nvidia_pcie_tx_bytes` and `nvidia_pcie_rx_bytes`
 
 ## Requirements
 
@@ -187,4 +188,10 @@ nvidia_utilization_process_name{minor="0",name="/usr/lib/Xorg",pid="1218"} 1
 nvidia_utilization_process_smutil{minor="0",pid="121742"} 0
 nvidia_utilization_process_smutil{minor="0",pid="1218"} 0
 nvidia_utilization_process_smutil{minor="0",pid="1632"} 1
+# HELP nvidia_pcie_rx_bytes PCIe RX throughput as reported by the device
+# TYPE nvidia_pcie_rx_bytes gauge
+nvidia_pcie_rx_bytes{minor="0"} 1000
+# HELP nvidia_pcie_tx_bytes PCIe TX throughput as reported by the device
+# TYPE nvidia_pcie_tx_bytes gauge
+nvidia_pcie_tx_bytes{minor="0"} 30000
 ```

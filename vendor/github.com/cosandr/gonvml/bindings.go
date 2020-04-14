@@ -204,6 +204,14 @@ nvmlReturn_t nvmlDeviceGetProcessUtilization(nvmlDevice_t device, nvmlProcessUti
 
 nvmlReturn_t (*nvmlDeviceGetSamplesFunc)(nvmlDevice_t device, nvmlSamplingType_t type, unsigned long long lastSeenTimeStamp, nvmlValueType_t *sampleValType, unsigned int *sampleCount, nvmlSample_t *samples);
 
+nvmlReturn_t (*nvmlDeviceGetPcieThroughputFunc)(nvmlDevice_t device, nvmlPcieUtilCounter_t counter, unsigned int *value);
+nvmlReturn_t nvmlDeviceGetPcieThroughput(nvmlDevice_t device, nvmlPcieUtilCounter_t counter, unsigned int *value) {
+  if (nvmlDeviceGetPcieThroughputFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPcieThroughputFunc(device, counter, value);
+}
+
 // Loads the "libnvidia-ml.so.1" shared library.
 // Loads all symbols needed and initializes NVML.
 // Call this before calling any other methods.
@@ -306,6 +314,11 @@ nvmlReturn_t nvmlInit_dl(void) {
   }
   nvmlDeviceGetProcessUtilizationFunc = dlsym(nvmlHandle, "nvmlDeviceGetProcessUtilization");
   if (nvmlDeviceGetProcessUtilizationFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+
+  nvmlDeviceGetPcieThroughputFunc = dlsym(nvmlHandle, "nvmlDeviceGetPcieThroughput");
+  if (nvmlDeviceGetPcieThroughputFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
 
@@ -427,6 +440,12 @@ const (
 	ClockTypeVideo = C.NVML_CLOCK_VIDEO
 	// ClockTypeCount Count of clock types
 	ClockTypeCount = C.NVML_CLOCK_COUNT
+	// PcieUtilTxBytes in kB
+	PcieUtilTxBytes = C.NVML_PCIE_UTIL_TX_BYTES
+	// PcieUtilRxBytes in kB
+	PcieUtilRxBytes = C.NVML_PCIE_UTIL_RX_BYTES
+	// PcieUtilCount Count of util types
+	PcieUtilCount = C.NVML_PCIE_UTIL_COUNT
 )
 
 var errLibraryNotLoaded = errors.New("could not load NVML library")
@@ -678,6 +697,16 @@ func (d Device) Clock(cid uint, ctype uint) (uint, error) {
 	}
 	var n C.uint
 	r := C.nvmlDeviceGetClock(d.dev, C.nvmlClockType_t(cid), C.nvmlClockId_t(ctype), &n)
+	return uint(n), errorString(r)
+}
+
+// PcieThroughput returns PCIe utilization information
+func (d Device) PcieThroughput(counter uint) (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetPcieThroughput(d.dev, C.nvmlPcieUtilCounter_t(counter), &n)
 	return uint(n), errorString(r)
 }
 
