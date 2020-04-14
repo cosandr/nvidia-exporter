@@ -10,6 +10,10 @@ github.com/cespare/xxhash/v2 v2.1.1 h1:6MnRN8NT7+YBpUIWxHtefFZOKTAPgGjpQSxqLNn0+
 github.com/cespare/xxhash/v2 v2.1.1/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/cosandr/gonvml v0.0.0-20190729053118-8e3a58cdf62a h1:bwC6eEwJO/5O2n2sbfJh7p7dqcZAcHd/dym69rzvXMk=
 github.com/cosandr/gonvml v0.0.0-20190729053118-8e3a58cdf62a/go.mod h1:OiDIdArrOhHmTP9+E6ma3Xz1EdO94mFrhVd4U3EubhA=
+github.com/cosandr/gonvml v0.0.0-20200413204732-c960c9a25e32 h1:I57PCBnHNusYqf5zjfM7E2GI6LANSUvotDjGFiqFe4U=
+github.com/cosandr/gonvml v0.0.0-20200413204732-c960c9a25e32/go.mod h1:OiDIdArrOhHmTP9+E6ma3Xz1EdO94mFrhVd4U3EubhA=
+github.com/cosandr/gonvml v0.0.0-20200414131507-fe44ef2ce54c h1:2oP2Lv88l2ZcKQWNvuYULptjNpQLlZeinB40qkfCKhI=
+github.com/cosandr/gonvml v0.0.0-20200414131507-fe44ef2ce54c/go.mod h1:OiDIdArrOhHmTP9+E6ma3Xz1EdO94mFrhVd4U3EubhA=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

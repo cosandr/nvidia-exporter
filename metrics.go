@@ -16,19 +16,21 @@ type Metrics struct {
 }
 
 type Device struct {
-	Index                 string
-	MinorNumber           string
-	Name                  string
-	UUID                  string
-	Temperature           float64
-	PowerUsage            float64
-	PowerUsageAverage     float64
-	FanSpeed              float64
-	MemoryTotal           float64
-	MemoryUsed            float64
-	UtilizationMemory     float64
-	UtilizationGPU        float64
-	UtilizationGPUAverage float64
+	Index                   string
+	MinorNumber             string
+	Name                    string
+	UUID                    string
+	Temperature             float64
+	PowerUsage              float64
+	PowerUsageAverage       float64
+	FanSpeed                float64
+	MemoryTotal             float64
+	MemoryUsed              float64
+	UtilizationMemory       float64
+	UtilizationGPU          float64
+	UtilizationGPUAverage   float64
+	ClockCurrentGraphics    float64
+	ClockAppDefaultGraphics float64
 }
 
 func collectMetrics() (*Metrics, error) {
@@ -106,21 +108,28 @@ func collectMetrics() (*Metrics, error) {
 
 		utilizationGPUAverage, utilizationGPUAverageErr := device.AverageGPUUtilization(averageDuration)
 
+		clockCurrentGraphics, clockCurrentGraphicsErr := device.Clock(gonvml.ClockIDCurrent, gonvml.ClockTypeGraphics)
+
+		// This appears to be the memory clock
+		clockAppDefaultGraphics, clockAppDefaultGraphicsErr := device.Clock(gonvml.ClockIDAppClockDefault, gonvml.ClockTypeGraphics)
+
 		metrics.Devices = append(metrics.Devices,
 			&Device{
-				Index:                 strconv.Itoa(index),
-				MinorNumber:           strconv.Itoa(int(minorNumber)),
-				Name:                  name,
-				UUID:                  uuid,
-				Temperature:           checkError(temperatureErr, float64(temperature), index, "Temperature"),
-				PowerUsage:            checkError(powerUsageErr, float64(powerUsage), index, "PowerUsage"),
-				PowerUsageAverage:     checkError(powerUsageAverageErr, float64(powerUsageAverage), index, "PowerUsageAverage"),
-				FanSpeed:              checkError(fanSpeedErr, float64(fanSpeed), index, "FanSpeed"),
-				MemoryTotal:           checkError(memoryInfoErr, float64(memoryTotal), index, "MemoryTotal"),
-				MemoryUsed:            checkError(memoryInfoErr, float64(memoryUsed), index, "MemoryUsed"),
-				UtilizationMemory:     checkError(utilizationRatesErr, float64(utilizationMemory), index, "UtilizationMemory"),
-				UtilizationGPU:        checkError(utilizationRatesErr, float64(utilizationGPU), index, "UtilizationGPU"),
-				UtilizationGPUAverage: checkError(utilizationGPUAverageErr, float64(utilizationGPUAverage), index, "UtilizationGPUAverage"),
+				Index:                   strconv.Itoa(index),
+				MinorNumber:             strconv.Itoa(int(minorNumber)),
+				Name:                    name,
+				UUID:                    uuid,
+				Temperature:             checkError(temperatureErr, float64(temperature), index, "Temperature"),
+				PowerUsage:              checkError(powerUsageErr, float64(powerUsage), index, "PowerUsage"),
+				PowerUsageAverage:       checkError(powerUsageAverageErr, float64(powerUsageAverage), index, "PowerUsageAverage"),
+				FanSpeed:                checkError(fanSpeedErr, float64(fanSpeed), index, "FanSpeed"),
+				MemoryTotal:             checkError(memoryInfoErr, float64(memoryTotal), index, "MemoryTotal"),
+				MemoryUsed:              checkError(memoryInfoErr, float64(memoryUsed), index, "MemoryUsed"),
+				UtilizationMemory:       checkError(utilizationRatesErr, float64(utilizationMemory), index, "UtilizationMemory"),
+				UtilizationGPU:          checkError(utilizationRatesErr, float64(utilizationGPU), index, "UtilizationGPU"),
+				UtilizationGPUAverage:   checkError(utilizationGPUAverageErr, float64(utilizationGPUAverage), index, "UtilizationGPUAverage"),
+				ClockCurrentGraphics:    checkError(clockCurrentGraphicsErr, float64(clockCurrentGraphics), index, "ClockCurrentGraphics"),
+				ClockAppDefaultGraphics: checkError(clockAppDefaultGraphicsErr, float64(clockAppDefaultGraphics), index, "ClockAppDefaultGraphics"),
 			})
 	}
 	return metrics, nil

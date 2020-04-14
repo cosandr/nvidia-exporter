@@ -2,7 +2,7 @@
 github.com/beorn7/perks/quantile
 # github.com/cespare/xxhash/v2 v2.1.1
 github.com/cespare/xxhash/v2
-# github.com/cosandr/gonvml v0.0.0-20190729053118-8e3a58cdf62a
+# github.com/cosandr/gonvml v0.0.0-20200414131507-fe44ef2ce54c
 ## explicit
 github.com/cosandr/gonvml
 # github.com/golang/protobuf v1.3.5

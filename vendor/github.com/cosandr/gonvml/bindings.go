@@ -143,6 +143,14 @@ nvmlReturn_t nvmlDeviceGetDecoderUtilization(nvmlDevice_t device, unsigned int* 
   return nvmlDeviceGetDecoderUtilizationFunc(device, utilization, samplingPeriodUs);
 }
 
+nvmlReturn_t (*nvmlDeviceGetClockFunc)(nvmlDevice_t device, nvmlClockType_t clockType, nvmlClockId_t clockId, unsigned int *clockMHz);
+nvmlReturn_t nvmlDeviceGetClock(nvmlDevice_t device, nvmlClockType_t clockType, nvmlClockId_t clockId, unsigned int *clockMHz) {
+  if (nvmlDeviceGetClockFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetClockFunc(device, clockType, clockId, clockMHz);
+}
+
 nvmlReturn_t (*nvmlSystemGetProcessNameFunc)(unsigned int pid, char *name, unsigned int length);
 nvmlReturn_t nvmlSystemGetProcessName(unsigned int pid, char *name, unsigned int length) {
   if (nvmlSystemGetProcessNameFunc == NULL) {
@@ -272,6 +280,10 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetDecoderUtilizationFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
+  nvmlDeviceGetClockFunc = dlsym(nvmlHandle, "nvmlDeviceGetClock");
+  if (nvmlDeviceGetClockFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
   nvmlSystemGetProcessNameFunc = dlsym(nvmlHandle, "nvmlSystemGetProcessName");
   if (nvmlSystemGetProcessNameFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
@@ -395,6 +407,26 @@ const (
 	szDriver = C.NVML_SYSTEM_DRIVER_VERSION_BUFFER_SIZE
 	szName   = C.NVML_DEVICE_NAME_BUFFER_SIZE
 	szUUID   = C.NVML_DEVICE_UUID_BUFFER_SIZE
+	// ClockIDCurrent Current actual clock value
+	ClockIDCurrent = C.NVML_CLOCK_ID_CURRENT
+	// ClockIDAppClockTarget Target application clock
+	ClockIDAppClockTarget = C.NVML_CLOCK_ID_APP_CLOCK_TARGET
+	// ClockIDAppClockDefault Default application clock target
+	ClockIDAppClockDefault = C.NVML_CLOCK_ID_APP_CLOCK_DEFAULT
+	// ClockIDCustomerBoostMax OEM-defined maximum clock rate
+	ClockIDCustomerBoostMax = C.NVML_CLOCK_ID_CUSTOMER_BOOST_MAX
+	// ClockIDCount Count of Clock Ids
+	ClockIDCount = C.NVML_CLOCK_ID_COUNT
+	// ClockTypeGraphics Graphics clock domain
+	ClockTypeGraphics = C.NVML_CLOCK_GRAPHICS
+	// ClockTypeSm SM clock domain
+	ClockTypeSm = C.NVML_CLOCK_SM
+	// ClockTypeMem Memory clock domain
+	ClockTypeMem = C.NVML_CLOCK_MEM
+	// ClockTypeVideo Video encoder/decoder clock domain
+	ClockTypeVideo = C.NVML_CLOCK_VIDEO
+	// ClockTypeCount Count of clock types
+	ClockTypeCount = C.NVML_CLOCK_COUNT
 )
 
 var errLibraryNotLoaded = errors.New("could not load NVML library")
@@ -637,6 +669,16 @@ func (d Device) DecoderUtilization() (uint, uint, error) {
 	var sp C.uint
 	r := C.nvmlDeviceGetDecoderUtilization(d.dev, &n, &sp)
 	return uint(n), uint(sp), errorString(r)
+}
+
+// Clock returns the clock speed of the GPU
+func (d Device) Clock(cid uint, ctype uint) (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetClock(d.dev, C.nvmlClockType_t(cid), C.nvmlClockId_t(ctype), &n)
+	return uint(n), errorString(r)
 }
 
 // DeviceGetAccountingMode Queries process's accounting stats
