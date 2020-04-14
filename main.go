@@ -12,6 +12,7 @@ import (
 const namespace = "nvidia"
 
 var usePerProcess = false
+var prevProcesses []*Process
 
 type Exporter struct {
 	up                        prometheus.Gauge
@@ -39,7 +40,7 @@ type Exporter struct {
 func main() {
 	var (
 		level         = flag.String("log.level", "info", "Set the output log level")
-		listenAddress = flag.String("web.listen-address", "0.0.0.0:9402", "Address to listen on for web interface and telemetry.")
+		listenAddress = flag.String("web.listen-address", "0.0.0.0:9401", "Address to listen on for web interface and telemetry.")
 		metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	)
 	flag.BoolVar(&usePerProcess, "nvidia.per-process", false, "Export per-process utilization")
@@ -303,6 +304,21 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		if checkMetric(d.ClockAppDefaultGraphics) {
 			e.clockAppDefaultGraphics.WithLabelValues(d.MinorNumber).Set(d.ClockAppDefaultGraphics)
 		}
+		// Delete previous process metrics
+		if len(prevProcesses) > 0 {
+			for _, p := range prevProcesses {
+				if p.Name != nil {
+					e.utilizationProcessName.DeleteLabelValues(d.MinorNumber, p.PromPID(), *p.Name)
+				} else {
+					e.utilizationProcessName.DeleteLabelValues(d.MinorNumber, p.PromPID(), "N/A")
+				}
+				e.utilizationProcessSMUtil.DeleteLabelValues(d.MinorNumber, p.PromPID())
+				e.utilizationProcessMemUtil.DeleteLabelValues(d.MinorNumber, p.PromPID())
+				e.utilizationProcessEncUtil.DeleteLabelValues(d.MinorNumber, p.PromPID())
+				e.utilizationProcessDecUtil.DeleteLabelValues(d.MinorNumber, p.PromPID())
+				prevProcesses = nil
+			}
+		}
 		if len(d.UtilizationProcesses) > 0 {
 			for _, p := range d.UtilizationProcesses {
 				if p.Name != nil {
@@ -314,6 +330,7 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 				e.utilizationProcessMemUtil.WithLabelValues(d.MinorNumber, p.PromPID()).Set(float64(p.MemUtil))
 				e.utilizationProcessEncUtil.WithLabelValues(d.MinorNumber, p.PromPID()).Set(float64(p.EncUtil))
 				e.utilizationProcessDecUtil.WithLabelValues(d.MinorNumber, p.PromPID()).Set(float64(p.DecUtil))
+				prevProcesses = append(prevProcesses, p)
 			}
 		}
 	}
