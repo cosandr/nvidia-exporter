@@ -3,6 +3,8 @@
 This exporter used the NVidia Management Library (NVML) to query information
 about the installed Nvidia GPUs.
 
+This fork also exports current graphics (`nvidia_clock_current_graphics`) and memory clock (`nvidia_clock_appdefault_graphics`).
+
 ## Requirements
 
 The NVML shared library (libnvidia-ml.so.1) need to be loadable. When running
@@ -148,4 +150,10 @@ nvidia_utilization_memory{minor="2"} 76
 nvidia_utilization_memory{minor="3"} 75
 nvidia_utilization_memory{minor="4"} 78
 nvidia_utilization_memory{minor="5"} 76
+# HELP nvidia_clock_appdefault_graphics Default application clock target in the graphics domain as reported by the device
+# TYPE nvidia_clock_appdefault_graphics gauge
+nvidia_clock_appdefault_graphics{minor="0"} 6118
+# HELP nvidia_clock_current_graphics Current GPU graphics clock speed as reported by the device
+# TYPE nvidia_clock_current_graphics gauge
+nvidia_clock_current_graphics{minor="0"} 1582
 ```
