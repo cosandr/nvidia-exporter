@@ -51,6 +51,7 @@ type Device struct {
 	Temperature             float64
 	PowerUsage              float64
 	PowerUsageAverage       float64
+	PowerLimit              float64
 	FanSpeed                float64
 	MemoryTotal             float64
 	MemoryUsed              float64
@@ -131,6 +132,8 @@ func collectMetrics() (*Metrics, error) {
 
 		powerUsageAverage, powerUsageAverageErr := device.AveragePowerUsage(averageDuration)
 
+		powerLimit, powerLimitErr := device.PowerLimit()
+
 		fanSpeed, fanSpeedErr := device.FanSpeed()
 
 		memoryTotal, memoryUsed, memoryInfoErr := device.MemoryInfo()
@@ -156,6 +159,7 @@ func collectMetrics() (*Metrics, error) {
 			Temperature:             checkError(temperatureErr, float64(temperature), index, "Temperature"),
 			PowerUsage:              checkError(powerUsageErr, float64(powerUsage), index, "PowerUsage"),
 			PowerUsageAverage:       checkError(powerUsageAverageErr, float64(powerUsageAverage), index, "PowerUsageAverage"),
+			PowerLimit:              checkError(powerLimitErr, float64(powerLimit), index, "PowerLimit"),
 			FanSpeed:                checkError(fanSpeedErr, float64(fanSpeed), index, "FanSpeed"),
 			MemoryTotal:             checkError(memoryInfoErr, float64(memoryTotal), index, "MemoryTotal"),
 			MemoryUsed:              checkError(memoryInfoErr, float64(memoryUsed), index, "MemoryUsed"),

@@ -212,6 +212,14 @@ nvmlReturn_t nvmlDeviceGetPcieThroughput(nvmlDevice_t device, nvmlPcieUtilCounte
   return nvmlDeviceGetPcieThroughputFunc(device, counter, value);
 }
 
+nvmlReturn_t (*nvmlDeviceGetPowerManagementLimitFunc)(nvmlDevice_t device, unsigned int *power);
+nvmlReturn_t nvmlDeviceGetPowerManagementLimit(nvmlDevice_t device, unsigned int *power) {
+  if (nvmlDeviceGetPowerManagementLimitFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
+  return nvmlDeviceGetPowerManagementLimitFunc(device, power);
+}
+
 // Loads the "libnvidia-ml.so.1" shared library.
 // Loads all symbols needed and initializes NVML.
 // Call this before calling any other methods.
@@ -316,12 +324,14 @@ nvmlReturn_t nvmlInit_dl(void) {
   if (nvmlDeviceGetProcessUtilizationFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-
   nvmlDeviceGetPcieThroughputFunc = dlsym(nvmlHandle, "nvmlDeviceGetPcieThroughput");
   if (nvmlDeviceGetPcieThroughputFunc == NULL) {
     return NVML_ERROR_FUNCTION_NOT_FOUND;
   }
-
+  nvmlDeviceGetPowerManagementLimitFunc = dlsym(nvmlHandle, "nvmlDeviceGetPowerManagementLimit");
+  if (nvmlDeviceGetPowerManagementLimitFunc == NULL) {
+    return NVML_ERROR_FUNCTION_NOT_FOUND;
+  }
   nvmlReturn_t result = nvmlInitFunc();
   if (result != NVML_SUCCESS) {
     dlclose(nvmlHandle);
@@ -707,6 +717,16 @@ func (d Device) PcieThroughput(counter uint) (uint, error) {
 	}
 	var n C.uint
 	r := C.nvmlDeviceGetPcieThroughput(d.dev, C.nvmlPcieUtilCounter_t(counter), &n)
+	return uint(n), errorString(r)
+}
+
+// PowerLimit returns the current power limit (mW) of the device
+func (d Device) PowerLimit() (uint, error) {
+	if C.nvmlHandle == nil {
+		return 0, errLibraryNotLoaded
+	}
+	var n C.uint
+	r := C.nvmlDeviceGetPowerManagementLimit(d.dev, &n)
 	return uint(n), errorString(r)
 }
 

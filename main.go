@@ -22,6 +22,7 @@ type Exporter struct {
 	deviceInfo                *prometheus.GaugeVec
 	powerUsage                *prometheus.GaugeVec
 	powerUsageAverage         *prometheus.GaugeVec
+	powerLimit                *prometheus.GaugeVec
 	fanSpeed                  *prometheus.GaugeVec
 	memoryTotal               *prometheus.GaugeVec
 	memoryUsed                *prometheus.GaugeVec
@@ -136,6 +137,14 @@ func NewExporter() *Exporter {
 				Namespace: namespace,
 				Name:      "power_usage_average",
 				Help:      "Power usage as reported by the device averaged over 10s",
+			},
+			[]string{"minor"},
+		),
+		powerLimit: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "power_limit",
+				Help:      "Power limit as reported by the device in mW",
 			},
 			[]string{"minor"},
 		),
@@ -304,6 +313,9 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		if checkMetric(d.PowerUsageAverage) {
 			e.powerUsageAverage.WithLabelValues(d.MinorNumber).Set(d.PowerUsageAverage)
 		}
+		if checkMetric(d.PowerLimit) {
+			e.powerLimit.WithLabelValues(d.MinorNumber).Set(d.PowerLimit)
+		}
 		if checkMetric(d.Temperature) {
 			e.temperatures.WithLabelValues(d.MinorNumber).Set(d.Temperature)
 		}
@@ -367,6 +379,7 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	e.memoryUsed.Collect(metrics)
 	e.powerUsage.Collect(metrics)
 	e.powerUsageAverage.Collect(metrics)
+	e.powerLimit.Collect(metrics)
 	e.temperatures.Collect(metrics)
 	e.up.Collect(metrics)
 	e.utilizationGPU.Collect(metrics)
@@ -394,6 +407,7 @@ func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
 	e.memoryUsed.Describe(descs)
 	e.powerUsage.Describe(descs)
 	e.powerUsageAverage.Describe(descs)
+	e.powerLimit.Describe(descs)
 	e.temperatures.Describe(descs)
 	e.up.Describe(descs)
 	e.utilizationGPU.Describe(descs)
