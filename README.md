@@ -19,51 +19,7 @@ in a container it must be either baked in or mounted from the host.
 
 ## Running in Kubernetes
 
-```
-apiVersion: apps/v1beta1
-kind: Deployment
-
-metadata:
-  name: nvidia-exporter
-spec:
-  replicas: 1
-  strategy:
-    type: Recreate
-  template:
-    metadata:
-      labels:
-        app: nvidia-exporter
-    spec:
-      containers:
-        - name: nvidia-exporter
-          securityContext:
-            privileged: true
-          image: bugroger/nvidia-exporter:latest
-          ports:
-            - containerPort: 9401
-          volumeMounts:
-            - mountPath: /usr/local/nvidia
-              name: nvidia
-      volumes:
-        - name: nvidia
-          hostPath:
-            path: /opt/nvidia/current
----
-apiVersion: v1
-kind: Service
-
-metadata:
-  name: nvidia-exporter
-  annotations:
-    prometheus.io/scrape: "true"
-    prometheus.io/port: "9401"
-spec:
-  selector:
-    app: nvidia-exporter
-  ports:
-    - name: tcp
-      port: 9401
-```
+See [kubernetes.yaml](./kubernetes.yaml)
 
 ## Example
 
