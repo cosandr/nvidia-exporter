@@ -62,6 +62,9 @@ func main() {
              </body>
              </html>`))
 	})
+	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte("OK"))
+	})
 	log.Infof("Starting HTTP server on %s", *listenAddress)
 	log.Infof("Export per-process utilization? %t", usePerProcess)
 	log.Fatal(http.ListenAndServe(*listenAddress, nil))

@@ -25,7 +25,7 @@ type Process struct {
 
 // ToString returns a string representation of this process
 func (p Process) ToString() string {
-	var dbgStr = fmt.Sprintf("Process: %d, SM  util: %d, Mem util: %d, Enc util: %d, Dec util: %d",
+	var dbgStr = fmt.Sprintf("Process: %d, SM util: %d, Mem util: %d, Enc util: %d, Dec util: %d",
 		p.PID, p.SMUtil, p.MemUtil, p.EncUtil, p.DecUtil)
 	if p.Name != nil {
 		dbgStr += fmt.Sprintf(", Name: %s", *p.Name)
