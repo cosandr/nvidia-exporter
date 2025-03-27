@@ -195,7 +195,7 @@ func collectMetrics() (*Metrics, error) {
 
 				name, err := gonvml.SystemGetProcessName(sample.Pid, 64)
 				if err != nil {
-					log.Errorf("\tdev.SystemGetProcessName() error: %v\n", err)
+					log.Debugf("\tdev.SystemGetProcessName() error: %v\n", err)
 				} else {
 					p.Name = &name
 				}
