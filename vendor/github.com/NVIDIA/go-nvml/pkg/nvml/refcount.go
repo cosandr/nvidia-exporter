@@ -1,4 +1,5 @@
-# Copyright 2017 Google Inc.
+/**
+# Copyright 2024 NVIDIA CORPORATION
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -11,13 +12,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+**/
 
-PKG=github.com/mindprince/gonvml
+package nvml
 
-.PHONY: build
-build:
-	docker run -v $(shell pwd):/go/src/$(PKG) --workdir=/go/src/$(PKG) golang:1.12 go build cmd/example/example.go
+type refcount int
 
-.PHONY: presubmit
-presubmit:
-	./.travis.gofmt.sh
+func (r *refcount) IncOnNoError(err error) {
+	if err == nil {
+		(*r)++
+	}
+}
+
+func (r *refcount) DecOnNoError(err error) {
+	if err == nil && (*r) > 0 {
+		(*r)--
+	}
+}

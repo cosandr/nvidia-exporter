@@ -3,7 +3,7 @@ module github.com/cosandr/nvidia-exporter
 go 1.24
 
 require (
-	github.com/cosandr/gonvml v0.0.0-20200416122112-5ace6aabb440
+	github.com/NVIDIA/go-nvml v0.12.4-1
 	github.com/prometheus/client_golang v1.21.1
 	github.com/sirupsen/logrus v1.9.3
 )

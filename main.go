@@ -21,16 +21,14 @@ type Exporter struct {
 	temperatures              *prometheus.GaugeVec
 	deviceInfo                *prometheus.GaugeVec
 	powerUsage                *prometheus.GaugeVec
-	powerUsageAverage         *prometheus.GaugeVec
 	powerLimit                *prometheus.GaugeVec
 	fanSpeed                  *prometheus.GaugeVec
 	memoryTotal               *prometheus.GaugeVec
 	memoryUsed                *prometheus.GaugeVec
 	utilizationMemory         *prometheus.GaugeVec
 	utilizationGPU            *prometheus.GaugeVec
-	utilizationGPUAverage     *prometheus.GaugeVec
 	clockCurrentGraphics      *prometheus.GaugeVec
-	clockAppDefaultGraphics   *prometheus.GaugeVec
+	clockMemory               *prometheus.GaugeVec
 	utilizationProcessName    *prometheus.GaugeVec
 	utilizationProcessSMUtil  *prometheus.GaugeVec
 	utilizationProcessMemUtil *prometheus.GaugeVec
@@ -132,14 +130,6 @@ func NewExporter() *Exporter {
 			},
 			[]string{"minor"},
 		),
-		powerUsageAverage: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Name:      "power_usage_average",
-				Help:      "Power usage as reported by the device averaged over 10s",
-			},
-			[]string{"minor"},
-		),
 		powerLimit: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
@@ -188,14 +178,6 @@ func NewExporter() *Exporter {
 			},
 			[]string{"minor"},
 		),
-		utilizationGPUAverage: prometheus.NewGaugeVec(
-			prometheus.GaugeOpts{
-				Namespace: namespace,
-				Name:      "utilization_gpu_average",
-				Help:      "Used memory as reported by the device averaged over 10s",
-			},
-			[]string{"minor"},
-		),
 		clockCurrentGraphics: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
@@ -204,11 +186,11 @@ func NewExporter() *Exporter {
 			},
 			[]string{"minor"},
 		),
-		clockAppDefaultGraphics: prometheus.NewGaugeVec(
+		clockMemory: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
-				Name:      "clock_appdefault_graphics",
-				Help:      "Default application clock target in the graphics domain as reported by the device",
+				Name:      "clock_current_memory",
+				Help:      "Current GPU memory clock speed as reported by the device",
 			},
 			[]string{"minor"},
 		),
@@ -295,7 +277,7 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	e.info.WithLabelValues(data.Version).Set(1)
 	e.deviceCount.Set(float64(len(data.Devices)))
 
-	for i := 0; i < len(data.Devices); i++ {
+	for i := range data.Devices {
 		d := data.Devices[i]
 		e.deviceInfo.WithLabelValues(d.Index, d.MinorNumber, d.Name, d.UUID).Set(1)
 		if checkMetric(d.FanSpeed) {
@@ -310,9 +292,6 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		if checkMetric(d.PowerUsage) {
 			e.powerUsage.WithLabelValues(d.MinorNumber).Set(d.PowerUsage)
 		}
-		if checkMetric(d.PowerUsageAverage) {
-			e.powerUsageAverage.WithLabelValues(d.MinorNumber).Set(d.PowerUsageAverage)
-		}
 		if checkMetric(d.PowerLimit) {
 			e.powerLimit.WithLabelValues(d.MinorNumber).Set(d.PowerLimit)
 		}
@@ -322,17 +301,14 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		if checkMetric(d.UtilizationGPU) {
 			e.utilizationGPU.WithLabelValues(d.MinorNumber).Set(d.UtilizationGPU)
 		}
-		if checkMetric(d.UtilizationGPUAverage) {
-			e.utilizationGPUAverage.WithLabelValues(d.MinorNumber).Set(d.UtilizationGPUAverage)
-		}
 		if checkMetric(d.UtilizationMemory) {
 			e.utilizationMemory.WithLabelValues(d.MinorNumber).Set(d.UtilizationMemory)
 		}
 		if checkMetric(d.ClockCurrentGraphics) {
 			e.clockCurrentGraphics.WithLabelValues(d.MinorNumber).Set(d.ClockCurrentGraphics)
 		}
-		if checkMetric(d.ClockAppDefaultGraphics) {
-			e.clockAppDefaultGraphics.WithLabelValues(d.MinorNumber).Set(d.ClockAppDefaultGraphics)
+		if checkMetric(d.clockMemory) {
+			e.clockMemory.WithLabelValues(d.MinorNumber).Set(d.clockMemory)
 		}
 		// Delete previous process metrics
 		if len(prevProcesses) > 0 {
@@ -378,15 +354,13 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	e.memoryTotal.Collect(metrics)
 	e.memoryUsed.Collect(metrics)
 	e.powerUsage.Collect(metrics)
-	e.powerUsageAverage.Collect(metrics)
 	e.powerLimit.Collect(metrics)
 	e.temperatures.Collect(metrics)
 	e.up.Collect(metrics)
 	e.utilizationGPU.Collect(metrics)
-	e.utilizationGPUAverage.Collect(metrics)
 	e.utilizationMemory.Collect(metrics)
 	e.clockCurrentGraphics.Collect(metrics)
-	e.clockAppDefaultGraphics.Collect(metrics)
+	e.clockMemory.Collect(metrics)
 	if usePerProcess {
 		e.utilizationProcessName.Collect(metrics)
 		e.utilizationProcessSMUtil.Collect(metrics)
@@ -406,15 +380,13 @@ func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
 	e.memoryTotal.Describe(descs)
 	e.memoryUsed.Describe(descs)
 	e.powerUsage.Describe(descs)
-	e.powerUsageAverage.Describe(descs)
 	e.powerLimit.Describe(descs)
 	e.temperatures.Describe(descs)
 	e.up.Describe(descs)
 	e.utilizationGPU.Describe(descs)
-	e.utilizationGPUAverage.Describe(descs)
 	e.utilizationMemory.Describe(descs)
 	e.clockCurrentGraphics.Describe(descs)
-	e.clockAppDefaultGraphics.Describe(descs)
+	e.clockMemory.Describe(descs)
 	if usePerProcess {
 		e.utilizationProcessName.Describe(descs)
 		e.utilizationProcessSMUtil.Describe(descs)
