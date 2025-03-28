@@ -12,6 +12,8 @@ import (
 const namespace = "nvidia"
 
 var usePerProcess = false
+var stripProcessArgs = false
+var stripProcessPath = false
 var prevProcesses []*Process
 
 type Exporter struct {
@@ -47,8 +49,14 @@ func main() {
 		metricsPath   = flag.String("web.telemetry-path", "/metrics", "Path under which to expose metrics.")
 	)
 	flag.BoolVar(&usePerProcess, "nvidia.per-process", false, "Export per-process utilization")
+	flag.BoolVar(&stripProcessArgs, "nvidia.strip-process-args", false, "Strip args from process names")
+	flag.BoolVar(&stripProcessPath, "nvidia.strip-process-path", false, "Strip path from process names")
 	flag.Parse()
 	setLogLevel(*level)
+
+	if !usePerProcess && (stripProcessArgs || stripProcessPath) {
+		log.Fatalln("Stripping args and/or path requires gathering per-process utilization")
+	}
 
 	prometheus.MustRegister(NewExporter())
 

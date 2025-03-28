@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/NVIDIA/go-nvml/pkg/nvml"
 	log "github.com/sirupsen/logrus"
@@ -176,6 +178,12 @@ func collectMetrics() (*Metrics, error) {
 				if err != nvml.SUCCESS {
 					log.Debugf("\tfailed to get process name for PID %d: %v\n", sample.Pid, err)
 				} else {
+					if stripProcessArgs {
+						name = strings.Split(name, " ")[0]
+					}
+					if stripProcessPath {
+						name = filepath.Base(name)
+					}
 					p.Name = &name
 				}
 				pList = append(pList, &p)
