@@ -41,24 +41,23 @@ func (p Process) PromPID() string {
 }
 
 type Device struct {
-	Index                 string
-	MinorNumber           string
-	Name                  string
-	UUID                  string
-	Temperature           float64
-	PowerUsage            float64
-	PowerLimit            float64
-	FanSpeed              float64
-	MemoryTotal           float64
-	MemoryUsed            float64
-	UtilizationMemory     float64
-	UtilizationGPU        float64
-	UtilizationGPUAverage float64
-	ClockCurrentGraphics  float64
-	clockMemory           float64
-	UtilizationProcesses  []*Process
-	PcieTxBytes           float64
-	PcieRxBytes           float64
+	Index                string
+	MinorNumber          string
+	Name                 string
+	UUID                 string
+	Temperature          float64
+	PowerUsage           float64
+	PowerLimit           float64
+	FanSpeed             float64
+	MemoryTotal          float64
+	MemoryUsed           float64
+	UtilizationMemory    float64
+	UtilizationGPU       float64
+	ClockCurrentGraphics float64
+	ClockCurrentMemory   float64
+	UtilizationProcesses []*Process
+	PcieTxBytes          float64
+	PcieRxBytes          float64
 }
 
 func collectMetrics() (*Metrics, error) {
@@ -120,7 +119,7 @@ func collectMetrics() (*Metrics, error) {
 
 		clockCurrentGraphics, clockCurrentGraphicsErr := device.GetClock(nvml.CLOCK_GRAPHICS, nvml.CLOCK_ID_CURRENT)
 
-		clockMemory, clockMemoryErr := device.GetClock(nvml.CLOCK_MEM, nvml.CLOCK_ID_CURRENT)
+		clockCurrentMemory, clockCurrentMemoryErr := device.GetClock(nvml.CLOCK_MEM, nvml.CLOCK_ID_CURRENT)
 
 		pcieTxBytes, pcieTxBytesErr := device.GetPcieThroughput(nvml.PCIE_UTIL_TX_BYTES)
 
@@ -140,7 +139,7 @@ func collectMetrics() (*Metrics, error) {
 			UtilizationMemory:    checkError(utilizationRatesErr, float64(utilizationRates.Memory), index, "UtilizationMemory"),
 			UtilizationGPU:       checkError(utilizationRatesErr, float64(utilizationRates.Gpu), index, "UtilizationGPU"),
 			ClockCurrentGraphics: checkError(clockCurrentGraphicsErr, float64(clockCurrentGraphics), index, "ClockCurrentGraphics"),
-			clockMemory:          checkError(clockMemoryErr, float64(clockMemory), index, "clockMemory"),
+			ClockCurrentMemory:   checkError(clockCurrentMemoryErr, float64(clockCurrentMemory), index, "ClockCurrentMemory"),
 			PcieTxBytes:          checkError(pcieTxBytesErr, float64(pcieTxBytes), index, "PcieTxBytes"),
 			PcieRxBytes:          checkError(pcieRxBytesErr, float64(pcieRxBytes), index, "PcieRxBytes"),
 		}

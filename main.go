@@ -28,7 +28,7 @@ type Exporter struct {
 	utilizationMemory         *prometheus.GaugeVec
 	utilizationGPU            *prometheus.GaugeVec
 	clockCurrentGraphics      *prometheus.GaugeVec
-	clockMemory               *prometheus.GaugeVec
+	clockCurrentMemory        *prometheus.GaugeVec
 	utilizationProcessName    *prometheus.GaugeVec
 	utilizationProcessSMUtil  *prometheus.GaugeVec
 	utilizationProcessMemUtil *prometheus.GaugeVec
@@ -189,7 +189,7 @@ func NewExporter() *Exporter {
 			},
 			[]string{"minor"},
 		),
-		clockMemory: prometheus.NewGaugeVec(
+		clockCurrentMemory: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
 				Namespace: namespace,
 				Name:      "clock_current_memory",
@@ -310,8 +310,8 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		if checkMetric(d.ClockCurrentGraphics) {
 			e.clockCurrentGraphics.WithLabelValues(d.MinorNumber).Set(d.ClockCurrentGraphics)
 		}
-		if checkMetric(d.clockMemory) {
-			e.clockMemory.WithLabelValues(d.MinorNumber).Set(d.clockMemory)
+		if checkMetric(d.ClockCurrentMemory) {
+			e.clockCurrentMemory.WithLabelValues(d.MinorNumber).Set(d.ClockCurrentMemory)
 		}
 		// Delete previous process metrics
 		if len(prevProcesses) > 0 {
@@ -363,7 +363,7 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	e.utilizationGPU.Collect(metrics)
 	e.utilizationMemory.Collect(metrics)
 	e.clockCurrentGraphics.Collect(metrics)
-	e.clockMemory.Collect(metrics)
+	e.clockCurrentMemory.Collect(metrics)
 	if usePerProcess {
 		e.utilizationProcessName.Collect(metrics)
 		e.utilizationProcessSMUtil.Collect(metrics)
@@ -389,7 +389,7 @@ func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
 	e.utilizationGPU.Describe(descs)
 	e.utilizationMemory.Describe(descs)
 	e.clockCurrentGraphics.Describe(descs)
-	e.clockMemory.Describe(descs)
+	e.clockCurrentMemory.Describe(descs)
 	if usePerProcess {
 		e.utilizationProcessName.Describe(descs)
 		e.utilizationProcessSMUtil.Describe(descs)
