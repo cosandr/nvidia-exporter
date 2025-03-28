@@ -21,7 +21,7 @@ spec:
       runtimeClassName: nvidia
       containers:
       - name: nvidia-exporter
-        image: ghcr.io/cosandr/nvidia-exporter:v1.1.0
+        image: ghcr.io/cosandr/nvidia-exporter:v1.2.0
         ports:
           - name: http
             containerPort: 9401
@@ -43,7 +43,7 @@ spec:
           runAsUser: 0
         resources:
           limits:
-            cpu: 100m
+            cpu: 1000m
             memory: 128Mi
           requests:
             cpu: 10m

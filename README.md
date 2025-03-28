@@ -8,14 +8,14 @@ Originally made by [BugRoger](https://github.com/BugRoger/nvidia-exporter).
 Go module and some tweaks by [ashleyprimo](https://github.com/ashleyprimo/nvidia-exporter).
 
 Additions with this fork:
-* Export current graphics (`nvidia_clock_current_graphics`) and memory clock (`nvidia_clock_appdefault_graphics`)
+* Export current graphics (`nvidia_clock_current_graphics`) and memory clock (`nvidia_clock_current_memory`)
 * Export per-process utilization stats (pid, name, sm, mem, encoder, decoder), enable with `nvidia.per-process` option
 * Export PCIe throughput `nvidia_pcie_tx_bytes` and `nvidia_pcie_rx_bytes`
+* Export decoder/encoder utilization
 
 ## Requirements
 
-The NVML shared library (libnvidia-ml.so.1) need to be loadable. When running
-in a container it must be either baked in or mounted from the host.
+The NVML shared library (libnvidia-ml.so.1) needs to be loadable.
 
 ## Running in Kubernetes
 
@@ -97,4 +97,10 @@ nvidia_utilization_process_name{minor="0",name="kitty",pid="3136"} 1
 nvidia_utilization_process_smutil{minor="0",pid="2114"} 14
 nvidia_utilization_process_smutil{minor="0",pid="3136"} 1
 nvidia_utilization_process_smutil{minor="0",pid="845718"} 14
+# HELP nvidia_utilization_decoder Decoder utilization as reported by the device
+# TYPE nvidia_utilization_decoder gauge
+nvidia_utilization_decoder{minor="0"} 0
+# HELP nvidia_utilization_encoder Encoder utilization as reported by the device
+# TYPE nvidia_utilization_encoder gauge
+nvidia_utilization_encoder{minor="0"} 0
 ```
