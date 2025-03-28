@@ -36,6 +36,8 @@ type Exporter struct {
 	utilizationProcessDecUtil *prometheus.GaugeVec
 	pcieTxBytes               *prometheus.GaugeVec
 	pcieRxBytes               *prometheus.GaugeVec
+	utilizationDecoder        *prometheus.GaugeVec
+	utilizationEncoder        *prometheus.GaugeVec
 }
 
 func main() {
@@ -253,6 +255,22 @@ func NewExporter() *Exporter {
 			},
 			[]string{"minor"},
 		),
+		utilizationDecoder: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "utilization_decoder",
+				Help:      "Decoder utilization as reported by the device",
+			},
+			[]string{"minor"},
+		),
+		utilizationEncoder: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "utilization_encoder",
+				Help:      "Encoder utilization as reported by the device",
+			},
+			[]string{"minor"},
+		),
 	}
 }
 
@@ -348,6 +366,12 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 		if checkMetric(d.PcieRxBytes) {
 			e.pcieRxBytes.WithLabelValues(d.MinorNumber).Set(d.PcieRxBytes)
 		}
+		if checkMetric(d.UtilizationDecoder) {
+			e.utilizationDecoder.WithLabelValues(d.MinorNumber).Set(d.UtilizationDecoder)
+		}
+		if checkMetric(d.UtilizationEncoder) {
+			e.utilizationEncoder.WithLabelValues(d.MinorNumber).Set(d.UtilizationEncoder)
+		}
 	}
 
 	e.deviceCount.Collect(metrics)
@@ -373,6 +397,8 @@ func (e *Exporter) Collect(metrics chan<- prometheus.Metric) {
 	}
 	e.pcieTxBytes.Collect(metrics)
 	e.pcieRxBytes.Collect(metrics)
+	e.utilizationDecoder.Collect(metrics)
+	e.utilizationEncoder.Collect(metrics)
 }
 
 func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
@@ -399,4 +425,6 @@ func (e *Exporter) Describe(descs chan<- *prometheus.Desc) {
 	}
 	e.pcieTxBytes.Describe(descs)
 	e.pcieRxBytes.Describe(descs)
+	e.utilizationDecoder.Describe(descs)
+	e.utilizationEncoder.Describe(descs)
 }

@@ -58,6 +58,8 @@ type Device struct {
 	UtilizationProcesses []*Process
 	PcieTxBytes          float64
 	PcieRxBytes          float64
+	UtilizationDecoder   float64
+	UtilizationEncoder   float64
 }
 
 func collectMetrics() (*Metrics, error) {
@@ -125,6 +127,10 @@ func collectMetrics() (*Metrics, error) {
 
 		pcieRxBytes, pcieRxBytesErr := device.GetPcieThroughput(nvml.PCIE_UTIL_RX_BYTES)
 
+		decUtil, _, decUtilErr := device.GetDecoderUtilization()
+
+		encUtil, _, encUtilErr := device.GetEncoderUtilization()
+
 		var appendDevice = Device{
 			Index:                strconv.Itoa(index),
 			MinorNumber:          strconv.Itoa(int(minorNumber)),
@@ -142,6 +148,8 @@ func collectMetrics() (*Metrics, error) {
 			ClockCurrentMemory:   checkError(clockCurrentMemoryErr, float64(clockCurrentMemory), index, "ClockCurrentMemory"),
 			PcieTxBytes:          checkError(pcieTxBytesErr, float64(pcieTxBytes), index, "PcieTxBytes"),
 			PcieRxBytes:          checkError(pcieRxBytesErr, float64(pcieRxBytes), index, "PcieRxBytes"),
+			UtilizationDecoder:   checkError(decUtilErr, float64(decUtil), index, "UtilizationDecoder"),
+			UtilizationEncoder:   checkError(encUtilErr, float64(encUtil), index, "UtilizationEncoder"),
 		}
 		// Skip process stats if not requested
 		if !usePerProcess {
